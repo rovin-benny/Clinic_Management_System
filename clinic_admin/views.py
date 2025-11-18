@@ -43,31 +43,41 @@ class DoctorViewSet(viewsets.ModelViewSet):
     queryset = Doctor.objects.all()
     serializer_class = DoctorDetailSerializer
 
+from rest_framework import viewsets, generics, status
+from rest_framework.response import Response
+from .permissions import IsAdmin
+from .serializers import (
+    UserRegistrationSerializer, StaffSerializer, DoctorSerializer, 
+    DepartmentSerializer, AdminPatientHistorySerializer 
+)
+from .models import Staff, Doctor, Department
+from receptionist.models import Patient
+from labtechnician.models import LabTestCategory, LabTestParameter
+from labtechnician.serializers import LabTestCategorySerializer, LabTestParameterSerializer 
+
+# ... (User Registration, Staff, Doctor, Department views stay the same) ...
+
 class AdminPatientHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Read-only endpoint for admins to view all patient history.
-    This fulfills "see all patient history" and "no delete/create patient".
-    URL: /api/clinic_admin/patient-history/
-    URL: /api/clinic_admin/patient-history/<id>/
+    Read-only endpoint for admins.
+    Shows Medical History + BILLING HISTORY.
     """
     permission_classes = [IsAdmin]
     queryset = Patient.objects.all()
-    serializer_class = PatientHistorySerializer # Re-using the serializer from the doctor app
+    serializer_class = AdminPatientHistorySerializer # <-- Uses the serializer WITH bills
 
 class AdminLabTestCategoryViewSet(viewsets.ModelViewSet):
     """
-    Full endpoint for admins to manage Lab Tests (create, update price, etc.).
-    URL: /api/clinic_admin/manage-lab-tests/
+    FULL CONTROL: Admin can Create, Update, Delete Lab Tests.
     """
     permission_classes = [IsAdmin]
     queryset = LabTestCategory.objects.all()
-    serializer_class = LabTestCategorySerializer # Re-using from lab app
+    serializer_class = LabTestCategorySerializer 
 
 class AdminLabTestParameterViewSet(viewsets.ModelViewSet):
     """
-    Full endpoint for admins to manage Lab Test Parameters.
-    URL: /api/clinic_admin/manage-lab-parameters/
+    FULL CONTROL: Admin can Create, Update, Delete Parameters.
     """
     permission_classes = [IsAdmin]
     queryset = LabTestParameter.objects.all()
-    serializer_class = LabTestParameterSerializer # Re-using from lab app
+    serializer_class = LabTestParameterSerializer

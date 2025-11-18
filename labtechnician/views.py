@@ -1,39 +1,42 @@
 from rest_framework import viewsets
-# --- This is the main change ---
-# We import our new custom permission
 from clinic_admin.permissions import IsLabTechnician
-# ------------------------------
-
 from .models import (
-    LabTestCategory, 
-    LabTestParameter, 
-    LabReport, 
-    LabReportResult, 
-    LabBill, 
-    LabBillItem
+    LabTestCategory, LabTestParameter, LabReport, LabReportResult, LabBill, LabBillItem
 )
 from .serializers import (
-    LabTestCategorySerializer, 
-    LabTestParameterSerializer, 
-    LabReportSerializer, 
-    LabReportResultSerializer, 
-    LabBillSerializer, 
-    LabBillItemSerializer
+    LabTestCategorySerializer, LabTestParameterSerializer, 
+    LabReportSerializer, LabReportResultSerializer, 
+    LabBillSerializer, LabBillItemSerializer
 )
+from doctor.models import LabTestOrder
+from doctor.serializers import LabTestOrderSerializer
 
-# --- All ViewSets below are now locked to LabTechnicians only ---
-
-class LabTestCategoryViewSet(viewsets.ModelViewSet):
+# 1. RESTRICTED VIEWS (Read-Only for Technician)
+class LabTestCategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """ Technician can VIEW test types, but NOT create/edit them. """
     permission_classes = [IsLabTechnician]
     queryset = LabTestCategory.objects.all()
     serializer_class = LabTestCategorySerializer
 
-class LabTestParameterViewSet(viewsets.ModelViewSet):
+class LabTestParameterViewSet(viewsets.ReadOnlyModelViewSet):
+    """ Technician can VIEW parameters, but NOT create/edit them. """
     permission_classes = [IsLabTechnician]
     queryset = LabTestParameter.objects.all()
     serializer_class = LabTestParameterSerializer
 
+# 2. WORKFLOW VIEWS (Full Access)
+
+class PendingLabTestsViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Shows all LabTestOrders from doctors.
+    This acts as the Technician's "To-Do List".
+    """
+    permission_classes = [IsLabTechnician]
+    queryset = LabTestOrder.objects.all().order_by('-id')
+    serializer_class = LabTestOrderSerializer
+
 class LabReportViewSet(viewsets.ModelViewSet):
+    """ Create Reports (Technician's main job) """
     permission_classes = [IsLabTechnician]
     queryset = LabReport.objects.all()
     serializer_class = LabReportSerializer
@@ -44,6 +47,7 @@ class LabReportResultViewSet(viewsets.ModelViewSet):
     serializer_class = LabReportResultSerializer
 
 class LabBillViewSet(viewsets.ModelViewSet):
+    """ Create Bills (Separate from Report) """
     permission_classes = [IsLabTechnician]
     queryset = LabBill.objects.all()
     serializer_class = LabBillSerializer
