@@ -6,16 +6,22 @@ from receptionist.models import Patient
 # --- STANDARD SERIALIZERS ---
 
 class PrescriptionItemSerializer(serializers.ModelSerializer):
+    # We use this for reading (showing the name)
     medicine_name = serializers.CharField(source='medicine.medicine_name', read_only=True)
+    
     class Meta:
         model = PrescriptionItem
-        fields = ['medicine_name', 'dosage', 'frequency', 'duration']
+        # FIX: Added 'consultation' and 'medicine' so you can save them!
+        fields = ['id', 'consultation', 'medicine', 'medicine_name', 'dosage', 'frequency', 'duration']
 
 class LabTestOrderSerializer(serializers.ModelSerializer):
+    # We use this for reading (showing the name)
     test_name = serializers.CharField(source='test.category_name', read_only=True)
+    
     class Meta:
         model = LabTestOrder
-        fields = ['id', 'test', 'test_name']
+        # FIX: Added 'consultation' and 'test' so you can save them!
+        fields = ['id', 'consultation', 'test', 'test_name']
 
 class BasicVitalsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,6 +29,7 @@ class BasicVitalsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ConsultationSerializer(serializers.ModelSerializer):
+    # These show the details nested inside the consultation view
     prescription_items = PrescriptionItemSerializer(many=True, read_only=True)
     lab_test_orders = LabTestOrderSerializer(many=True, read_only=True)
 
@@ -34,7 +41,7 @@ class ConsultationSerializer(serializers.ModelSerializer):
             'prescription_items', 'lab_test_orders'
         ]
 
-# --- HISTORY SERIALIZERS (NO BILLING) ---
+# --- HISTORY SERIALIZERS (For Patient History View) ---
 
 class LabReportResultHistorySerializer(serializers.ModelSerializer):
     parameter_name = serializers.CharField(source='parameter.label')
@@ -68,7 +75,6 @@ class PatientHistorySerializer(serializers.ModelSerializer):
     DOCTOR VIEW: Shows Consultations and Lab Reports.
     DOES NOT SHOW BILLS.
     """
-    # We use a method field to get consultations safely
     consultations = serializers.SerializerMethodField()
     lab_reports = LabReportHistorySerializer(many=True, read_only=True, source='labreport_set')
     
@@ -80,6 +86,5 @@ class PatientHistorySerializer(serializers.ModelSerializer):
         ]
 
     def get_consultations(self, obj):
-        # Find all consultations linked to appointments for THIS patient
         consults = Consultation.objects.filter(appointment__patient=obj).order_by('-id')
         return ConsultationHistorySerializer(consults, many=True).data

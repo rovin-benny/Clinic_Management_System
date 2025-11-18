@@ -3,6 +3,7 @@ from django.contrib.auth.models import User, Group
 from .models import Staff, Doctor, Department
 from receptionist.models import ConsultationBill
 from labtechnician.models import LabBill
+from pharmacy.models import PharmacyBill
 
 # --- Import the Doctor's History Serializer ---
 from doctor.serializers import PatientHistorySerializer
@@ -144,7 +145,6 @@ class DoctorDetailSerializer(serializers.ModelSerializer):
         model = Doctor
         fields = ['id', 'staff', 'consultation_fee', 'designation', 'availability', 'department_name']
 
-
 # --- BILLING SERIALIZERS ---
 
 class SimpleConsultationBillSerializer(serializers.ModelSerializer):
@@ -157,6 +157,12 @@ class SimpleLabBillSerializer(serializers.ModelSerializer):
         model = LabBill
         fields = ['bill_date', 'total_amount']
 
+# --- ADD THIS NEW CLASS ---
+class SimplePharmacyBillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PharmacyBill
+        fields = ['bill_date', 'total_amount']
+
 # --- ADMIN/RECEPTIONIST PATIENT HISTORY ---
 
 class AdminPatientHistorySerializer(PatientHistorySerializer):
@@ -166,6 +172,10 @@ class AdminPatientHistorySerializer(PatientHistorySerializer):
     """
     consultation_bills = SimpleConsultationBillSerializer(many=True, read_only=True, source='consultationbill_set')
     lab_bills = SimpleLabBillSerializer(many=True, read_only=True, source='labbill_set')
+    
+    # --- ADD THIS LINE ---
+    pharmacy_bills = SimplePharmacyBillSerializer(many=True, read_only=True, source='pharmacybill_set')
 
     class Meta(PatientHistorySerializer.Meta):
-        fields = PatientHistorySerializer.Meta.fields + ['consultation_bills', 'lab_bills']
+        # --- UPDATE THIS LIST ---
+        fields = PatientHistorySerializer.Meta.fields + ['consultation_bills', 'lab_bills', 'pharmacy_bills']
