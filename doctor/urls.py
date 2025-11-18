@@ -5,25 +5,22 @@ from .views import (
     ConsultationViewSet, 
     PrescriptionItemViewSet, 
     LabTestOrderViewSet,
-   # MyTodayAppointmentsViewSet,  # <-- UN-COMMENTED
-    PatientHistoryView         # <-- UN-COMMENTED
+    MyTodayAppointmentsViewSet,  # <-- Imported
+    PatientHistoryView           # <-- Imported
 )
 
-# The router automatically creates the URLs for our ViewSets
 router = DefaultRouter()
 router.register(r'basic-vitals', BasicVitalsViewSet)
 router.register(r'consultations', ConsultationViewSet)
 router.register(r'prescription-items', PrescriptionItemViewSet)
 router.register(r'lab-test-orders', LabTestOrderViewSet)
-#router.register(r'my-today-appointments', MyTodayAppointmentsViewSet, basename='my-today-appointments') # <-- UN-COMMENTED
+# This creates the URL: /api/doctor/my-today-appointments/
+router.register(r'my-today-appointments', MyTodayAppointmentsViewSet, basename='my-today-appointments')
 
-# This is the main variable this file exports
 urlpatterns = [
-    # All the router URLs are included here
     path('', include(router.urls)),
     
-    # --- ADD THIS NEW MANUAL URL ---
-    # This creates a URL like: api/doctor/patient-history/123/
+    # This creates the URL: /api/doctor/patient-history/<id>/
     path(
         'patient-history/<int:id>/', 
         PatientHistoryView.as_view(), 

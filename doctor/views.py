@@ -5,55 +5,44 @@ from .serializers import (
     ConsultationSerializer, 
     PrescriptionItemSerializer, 
     LabTestOrderSerializer,
-    PatientHistorySerializer # <-- UN-COMMENTED
+    PatientHistorySerializer
 )
-# --- This is the main change ---
-# We import our new custom permission
 from clinic_admin.permissions import IsDoctor
-# ------------------------------
-
-# --- Add these imports ---
 import datetime
-from receptionist.models import Appointment, Patient     # <-- UN-COMMENTED
-# from receptionist.serializers import AppointmentSerializer  # <-- UN-COMMENTED
-# -------------------------
+from receptionist.models import Appointment, Patient
+from receptionist.serializers import AppointmentSerializer 
 
-
-# class MyTodayAppointmentsViewSet(viewsets.ReadOnlyModelViewSet): # <-- UN-COMMENTED CLASS
-#     """
-#     A 'read-only' view that shows the logged-in doctor
-#     THEIR appointments scheduled for TODAY.
-#     """
-#     # --- PERMISSION UPDATED ---
-#     permission_classes = [IsDoctor]
-#     serializer_class = AppointmentSerializer
+class MyTodayAppointmentsViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Shows the logged-in doctor THEIR appointments for TODAY.
+    """
+    permission_classes = [IsDoctor]
+    serializer_class = AppointmentSerializer
     
-#     def get_queryset(self):
-#         user = self.request.user
-#         today = datetime.date.today()
+    def get_queryset(self):
+        user = self.request.user
+        today = datetime.date.today()
         
-#         if not hasattr(user, 'staff') or not hasattr(user.staff, 'doctor'):
-#              return Appointment.objects.none()
+        # Safety check: Is this user actually a doctor?
+        if not hasattr(user, 'staff') or not hasattr(user.staff, 'doctor'):
+             return Appointment.objects.none()
 
-#         return Appointment.objects.filter(
-#             doctor=user.staff.doctor, 
-#             appointment_date__date=today
-#         ).order_by('appointment_date')
+        # Filter: Appointments for THIS doctor on THIS day
+        return Appointment.objects.filter(
+            doctor=user.staff.doctor, 
+            appointment_date__date=today
+        ).order_by('appointment_date')
 
-
-class PatientHistoryView(generics.RetrieveAPIView): # <-- UN-COMMENTED CLASS
+class PatientHistoryView(generics.RetrieveAPIView):
     """
-    A 'read-only' view that gets a single Patient by their ID
-    and returns their *complete* medical history.
+    Shows complete medical history for one patient.
     """
-    # --- PERMISSION UPDATED ---
     permission_classes = [IsDoctor]
     queryset = Patient.objects.all()
     serializer_class = PatientHistorySerializer
     lookup_field = 'id' 
 
-
-# --- All ViewSets below are now locked to Doctors only ---
+# --- STANDARD CRUD VIEWS ---
 
 class BasicVitalsViewSet(viewsets.ModelViewSet):
     permission_classes = [IsDoctor]

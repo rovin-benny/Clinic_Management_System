@@ -1,8 +1,14 @@
-from rest_framework import viewsets,filters
-from .models import Patient,Appointment,ConsultationBill
-from .serializers import PatientSerializer,AppointmentSerializer,ConsultationBillSerializer
+from rest_framework import viewsets, filters
+from .models import Patient, Appointment, ConsultationBill
+from .serializers import PatientSerializer, AppointmentSerializer, ConsultationBillSerializer
+
+# --- 1. Import the Custom Permission ---
+from clinic_admin.permissions import IsReceptionist
 
 class PatientViewSet(viewsets.ModelViewSet):
+    # --- 2. Apply the Permission ---
+    permission_classes = [IsReceptionist]
+    
     queryset = Patient.objects.all().order_by("id")
     serializer_class = PatientSerializer
 
@@ -11,14 +17,20 @@ class PatientViewSet(viewsets.ModelViewSet):
     search_fields = ['patient_name', 'phone']
 
 class AppointmentViewSet(viewsets.ModelViewSet):
+    # --- 2. Apply the Permission ---
+    permission_classes = [IsReceptionist]
+    
     queryset = Appointment.objects.all().order_by('-id')
     serializer_class = AppointmentSerializer
 
-    # Search API
+    # Search API (Search by token or patient name)
     filter_backends = [filters.SearchFilter]
     search_fields = ['token', 'patient__patient_name']
 
 class ConsultationBillViewSet(viewsets.ModelViewSet):
+    # --- 2. Apply the Permission ---
+    permission_classes = [IsReceptionist]
+    
     queryset = ConsultationBill.objects.all().order_by('-id')
     serializer_class = ConsultationBillSerializer
 

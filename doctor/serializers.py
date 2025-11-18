@@ -1,22 +1,21 @@
 from rest_framework import serializers
 from .models import BasicVitals, Consultation, PrescriptionItem, LabTestOrder
-
-# --- Add these imports ---
 from labtechnician.models import LabReport, LabReportResult
 from receptionist.models import Patient
-# -------------------------
 
-# This serializer will be "nested" inside the Consultation
+# --- STANDARD SERIALIZERS ---
+
 class PrescriptionItemSerializer(serializers.ModelSerializer):
+    medicine_name = serializers.CharField(source='medicine.medicine_name', read_only=True)
     class Meta:
         model = PrescriptionItem
-        fields = ['medicine', 'dosage', 'frequency', 'duration']
+        fields = ['medicine_name', 'dosage', 'frequency', 'duration']
 
-# This serializer will also be "nested"
 class LabTestOrderSerializer(serializers.ModelSerializer):
+    test_name = serializers.CharField(source='test.category_name', read_only=True)
     class Meta:
         model = LabTestOrder
-        fields = ['test']
+        fields = ['id', 'test', 'test_name']
 
 class BasicVitalsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,30 +23,20 @@ class BasicVitalsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ConsultationSerializer(serializers.ModelSerializer):
-    # These "nested" serializers will show the full prescription
-    # and lab orders inside the consultation, which is very useful.
     prescription_items = PrescriptionItemSerializer(many=True, read_only=True)
     lab_test_orders = LabTestOrderSerializer(many=True, read_only=True)
 
     class Meta:
         model = Consultation
         fields = [
-            'id', 
-            'appointment', 
-            'vitals', 
-            'symptoms', 
-            'diagnosis', 
-            'notes',
-            'fulfill_pharmacy_internally', 
-            'fulfill_lab_internally',
-            'prescription_items',  # This will show the list of prescriptions
-            'lab_test_orders'      # This will show the list of lab tests
+            'id', 'appointment', 'vitals', 'symptoms', 'diagnosis', 'notes',
+            'fulfill_pharmacy_internally', 'fulfill_lab_internally',
+            'prescription_items', 'lab_test_orders'
         ]
 
-# --- ADD THESE NEW SERIALIZERS FOR HISTORY ---
+# --- HISTORY SERIALIZERS (NO BILLING) ---
 
 class LabReportResultHistorySerializer(serializers.ModelSerializer):
-    """Shows a single line item from a lab report"""
     parameter_name = serializers.CharField(source='parameter.label')
     normal_range = serializers.CharField(source='parameter.normal_range')
     class Meta:
@@ -55,49 +44,42 @@ class LabReportResultHistorySerializer(serializers.ModelSerializer):
         fields = ['parameter_name', 'value', 'normal_range']
 
 class LabReportHistorySerializer(serializers.ModelSerializer):
-    """Shows a full lab report, including all its results"""
     test_name = serializers.CharField(source='category.category_name')
     results = LabReportResultHistorySerializer(many=True, read_only=True)
-    
     class Meta:
         model = LabReport
         fields = ['id', 'test_name', 'report_date', 'remarks', 'results']
 
 class ConsultationHistorySerializer(serializers.ModelSerializer):
-    """Shows a full consultation, including prescriptions and lab orders"""
+    doctor_name = serializers.CharField(source='appointment.doctor.staff.full_name', read_only=True)
+    visit_date = serializers.DateTimeField(source='appointment.appointment_date', read_only=True)
     prescription_items = PrescriptionItemSerializer(many=True, read_only=True)
     lab_test_orders = LabTestOrderSerializer(many=True, read_only=True)
     
     class Meta:
         model = Consultation
         fields = [
-            'id', 
-            'appointment', 
-            'symptoms', 
-            'diagnosis', 
-            'notes', 
-            'prescription_items', 
-            'lab_test_orders'
+            'id', 'doctor_name', 'visit_date', 'symptoms', 
+            'diagnosis', 'notes', 'prescription_items', 'lab_test_orders'
         ]
 
 class PatientHistorySerializer(serializers.ModelSerializer):
     """
-    Shows *everything* for a patient.
-    This is the "Top Level" serializer.
+    DOCTOR VIEW: Shows Consultations and Lab Reports.
+    DOES NOT SHOW BILLS.
     """
-    # Use 'source' to find related models. This looks for
-    # 'consultation' on the 'appointment_set' and all 'labreport_set'
-    consultations = ConsultationHistorySerializer(many=True, read_only=True, source='appointment_set.consultation')
+    # We use a method field to get consultations safely
+    consultations = serializers.SerializerMethodField()
     lab_reports = LabReportHistorySerializer(many=True, read_only=True, source='labreport_set')
     
     class Meta:
         model = Patient
         fields = [
-            'id',
-            'patient_name',
-            'age',
-            'gender',
-            'blood_group',
-            'consultations',
-            'lab_reports'
+            'id', 'patient_name', 'age', 'gender', 'blood_group',
+            'consultations', 'lab_reports' 
         ]
+
+    def get_consultations(self, obj):
+        # Find all consultations linked to appointments for THIS patient
+        consults = Consultation.objects.filter(appointment__patient=obj).order_by('-id')
+        return ConsultationHistorySerializer(consults, many=True).data
