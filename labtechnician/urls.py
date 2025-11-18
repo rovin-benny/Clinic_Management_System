@@ -1,0 +1,26 @@
+# In labtechnician/urls.py
+
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import (
+    LabTestCategoryViewSet, 
+    LabTestParameterViewSet, 
+    LabReportViewSet, 
+    LabReportResultViewSet, 
+    LabBillViewSet, 
+    LabBillItemViewSet
+)
+
+# The router automatically creates the URLs for our ViewSets
+router = DefaultRouter()
+router.register(r'test-categories', LabTestCategoryViewSet)
+router.register(r'test-parameters', LabTestParameterViewSet)
+router.register(r'lab-reports', LabReportViewSet)
+router.register(r'lab-report-results', LabReportResultViewSet)
+router.register(r'lab-bills', LabBillViewSet)
+router.register(r'lab-bill-items', LabBillItemViewSet)
+
+# This is the main variable this file exports
+urlpatterns = [
+    path('', include(router.urls)),
+]
