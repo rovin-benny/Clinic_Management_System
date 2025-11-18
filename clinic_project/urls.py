@@ -27,5 +27,5 @@ urlpatterns = [
     # Your teammates will add their apps here later
     path('api/receptionist/', include('receptionist.urls')),
     path('api/lab/', include('labtechnician.urls')),
-    # path('api/pharmacy/', include('pharmacy.urls')),
+    path('api/pharmacy/', include('pharmacy.urls')),
 ]
